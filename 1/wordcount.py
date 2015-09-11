@@ -42,11 +42,12 @@ import sys
 def proc_file(filename):
     result = {}
     with open(filename) as f:
-        for word in map(str.lower, f.read().split()):
-            if word in result:
-                result[word] += 1
-            else:
-                result[word] = 1
+        for line in f:
+            for word in map(str.lower, line.split()):
+                if word in result:
+                    result[word] += 1
+                else:
+                    result[word] = 1
     return result
 
 
@@ -58,7 +59,8 @@ def print_words(filename):
 
 def print_top(filename):
     words = proc_file(filename)
-    for word, count in sorted(words.items(), key=lambda pair: pair[1], reverse=True)[:20]:
+    for word, count in sorted(words.items(),
+                              key=lambda pair: pair[1], reverse=True)[:20]:
         print(word, count)
 
 

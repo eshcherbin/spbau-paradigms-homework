@@ -25,8 +25,8 @@ def verbing(s):
 # Example output: 'This dinner is good!'
 def not_bad(s):
     not_pos, bad_pos = s.find('not'), s.find('bad')
-    return s if not_pos == -1 or bad_pos == -1 or not_pos > bad_pos \
-                else s[:not_pos] + 'good' + s[bad_pos+3:]
+    return s[:not_pos] + 'good' + s[bad_pos+3:] \
+        if -1 < not_pos < bad_pos else s
 
 
 # Consider dividing a string into two halves.
@@ -39,9 +39,12 @@ def not_bad(s):
 #
 # Example input: 'abcd', 'xy'
 # Example output: 'abxcdy'
+def half(lst):
+    return (len(lst) + 1) // 2
+
+
 def front_back(a, b):
-    return a[:(len(a) + 1) // 2] + b[:(len(b) + 1) // 2] + \
-        a[(len(a) + 1) // 2:] + b[(len(b) + 1) // 2:]
+    return a[:half(a)] + b[:half(b)] + a[half(a):] + b[half(b):]
 
 
 if __name__ == '__main__':

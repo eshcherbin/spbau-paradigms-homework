@@ -11,10 +11,21 @@ def calc_hash(filename):
     hasher = sha1()
     with open(filename, mode='rb') as f:
         chunk = f.read(CHUNK_SIZE)
-        while chunk != b'':
+        while chunk:
             hasher.update(chunk)
             chunk = f.read(CHUNK_SIZE)
-    return hasher.hexdigest()
+        return hasher.hexdigest()
+
+
+def find_duplicates(dirname):
+    hash2files = defaultdict(list)
+    for dirpath, _, filenames in os.walk(dirname):
+        for f, f_full in zip(filenames, map(lambda s: os.path.join(dirpath, s),
+                                            filenames)):
+            if not (f.startswith('.') or f.startswith('~') or
+                    os.path.islink(f_full)):
+                hash2files[calc_hash(f_full)].append(f_full)
+    return hash2files.values()
 
 
 def main():
@@ -22,18 +33,11 @@ def main():
         print('usage: python duplicates.py dirname')
         sys.exit(1)
 
-    dirname = os.path.abspath(sys.argv[1])
+    dirname = sys.argv[1]
 
-    hash2files = defaultdict(list)
-    for dirpath, dirnames, filenames in os.walk(dirname):
-        for f in filenames:
-            if not (f.startswith('.') or f.startswith('~')):
-                f = os.path.join(dirpath, f)
-                hash2files[calc_hash(f)].append(f)
-
-    for files in hash2files.values():
+    for files in find_duplicates(dirname):
         if len(files) > 1:
-            print(':'.join(map(str, files)))
+            print(*files, sep=':')
 
 
 if __name__ == '__main__':

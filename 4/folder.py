@@ -1,6 +1,15 @@
 from model import (Number, Reference, Function,
                    FunctionDefinition, FunctionCall, BinaryOperation,
-                   UnaryOperation, Conditional, Read, Print)
+                   UnaryOperation, Conditional, Read, Print, Scope)
+
+
+class EmptyScopeSingleton(Scope):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super().__new__(cls, *args, **kwargs)
+        return cls._instance
 
 
 class ConstantFolder:
@@ -40,15 +49,17 @@ class ConstantFolder:
         self.expr_stack.append(current_fd)
 
     def visitConditional(self, conditional):
-        current_cond = Conditional(None, [], [])
+        current_cond = Conditional(None, [], None)
         conditional.condition.accept(self)
         current_cond.condition = self.expr_stack.pop()
         for expr in conditional.if_true:
             expr.accept(self)
             current_cond.if_true.append(self.expr_stack.pop())
-        for expr in conditional.if_false:
-            expr.accept(self)
-            current_cond.if_false.append(self.expr_stack.pop())
+        if conditional.if_false:
+            current_cond.if_false = []
+            for expr in conditional.if_false:
+                expr.accept(self)
+                current_cond.if_false.append(self.expr_stack.pop())
         self.expr_stack.append(current_cond)
 
     def visitPrint(self, print_expr):
@@ -77,35 +88,8 @@ class ConstantFolder:
         result.rhs = self.expr_stack.pop()
         if (isinstance(result.lhs, Number) and
                 isinstance(result.rhs, Number)):
-            a = result.lhs.value
-            b = result.rhs.value
-            op = result.op
-            if op == '+':
-                result = Number(a + b)
-            elif op == '-':
-                result = Number(a - b)
-            elif op == '*':
-                result = Number(a * b)
-            elif op == '/':
-                result = Number(a // b)
-            elif op == '%':
-                result = Number(a % b)
-            elif op == '==':
-                result = Number(1 if a == b else 0)
-            elif op == '!=':
-                result = Number(0 if a == b else 1)
-            elif op == '<':
-                result = Number(1 if a < b else 0)
-            elif op == '>':
-                result = Number(1 if a > b else 0)
-            elif op == '<=':
-                result = Number(1 if a <= b else 0)
-            elif op == '>=':
-                result = Number(1 if a >= b else 0)
-            elif op == '&&':
-                result = Number(a and b)
-            elif op == '||':
-                result = Number(a or b)
+            empty_scope = EmptyScopeSingleton()
+            result = result.evaluate(empty_scope)
         elif result.op == '*' and ((isinstance(result.lhs, Number) and
                                     result.lhs.value == 0) or
                                    (isinstance(result.rhs, Number) and
@@ -122,10 +106,6 @@ class ConstantFolder:
         un_op.expr.accept(self)
         result = UnaryOperation(un_op.op, self.expr_stack.pop())
         if isinstance(result.expr, Number):
-            a = result.expr.value
-            op = self.op
-            if op == '!':
-                result = Number(1 if not a else 0)
-            elif op == '-':
-                result = Number(-a)
+            empty_scope = EmptyScopeSingleton()
+            result = result.evaluate(empty_scope)
         self.expr_stack.append(result)

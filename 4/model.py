@@ -16,18 +16,20 @@ class Scope(object):
         self.data[key] = value
 
 
-class Number:
+class Expression:
+    def accept(self, visitor):
+        return visitor.visit(self)
+
+
+class Number(Expression):
     def __init__(self, value):
         self.value = value
 
     def evaluate(self, scope):
         return self
 
-    def accept(self, visitor):
-        return visitor.visit(self)
 
-
-class Function:
+class Function(Expression):
     def __init__(self, args, body):
         self.args = args
         self.body = body
@@ -38,11 +40,8 @@ class Function:
             result = expr.evaluate(scope)
         return result
 
-    def accept(self, visitor):
-        return visitor.visit(self)
 
-
-class FunctionDefinition:
+class FunctionDefinition(Expression):
     def __init__(self, name, function):
         self.name = name
         self.function = function
@@ -51,11 +50,8 @@ class FunctionDefinition:
         scope[self.name] = self.function
         return self.function
 
-    def accept(self, visitor):
-        return visitor.visit(self)
 
-
-class Conditional:
+class Conditional(Expression):
     def __init__(self, condition, if_true, if_false=None):
         self.condition = condition
         self.if_true = if_true
@@ -71,33 +67,24 @@ class Conditional:
             result = expr.evaluate(scope)
         return result
 
-    def accept(self, visitor):
-        return visitor.visit(self)
 
-
-class Print:
+class Print(Expression):
     def __init__(self, expr):
         self.expr = expr
 
     def evaluate(self, scope):
         print(self.expr.evaluate(scope).value)
 
-    def accept(self, visitor):
-        return visitor.visit(self)
 
-
-class Read:
+class Read(Expression):
     def __init__(self, name):
         self.name = name
 
     def evaluate(self, scope):
         scope[self.name] = Number(int(input()))
 
-    def accept(self, visitor):
-        return visitor.visit(self)
 
-
-class FunctionCall:
+class FunctionCall(Expression):
     def __init__(self, fun_expr, args):
         self.fun_expr = fun_expr
         self.args = args
@@ -111,22 +98,16 @@ class FunctionCall:
             call_scope[arg_name] = arg_value
         return function.evaluate(call_scope)
 
-    def accept(self, visitor):
-        return visitor.visit(self)
 
-
-class Reference:
+class Reference(Expression):
     def __init__(self, name):
         self.name = name
 
     def evaluate(self, scope):
         return scope[self.name]
 
-    def accept(self, visitor):
-        return visitor.visit(self)
 
-
-class BinaryOperation:
+class BinaryOperation(Expression):
     def __init__(self, lhs, op, rhs):
         self.lhs = lhs
         self.op = op
@@ -163,11 +144,8 @@ class BinaryOperation:
         elif op == '||':
             return Number(a or b)
 
-    def accept(self, visitor):
-        return visitor.visit(self)
 
-
-class UnaryOperation:
+class UnaryOperation(Expression):
     def __init__(self, op, expr):
         self.op = op
         self.expr = expr
@@ -179,9 +157,6 @@ class UnaryOperation:
             return Number(1 if not a else 0)
         elif op == '-':
             return Number(-a)
-
-    def accept(self, visitor):
-        return visitor.visit(self)
 
 if __name__ == '__main__':
     # GCD algo
@@ -237,6 +212,9 @@ if __name__ == '__main__':
         pretty_printer = PrettyPrinter()
         print('======== Test 1 ======')
         FunctionDefinition('main', main).accept(pretty_printer)
+        print('======== Test 2 ======')
+        pretty_printer_2 = PrettyPrinter(2)
+        FunctionDefinition('main', main).accept(pretty_printer_2)
         print('======================\n')
 
     def test_folder():
@@ -253,6 +231,9 @@ if __name__ == '__main__':
         fd.accept(constant_folder).accept(pretty_printer)
         print('----------------------')
         fd.accept(pretty_printer)
+        print('======== Test 3 ======')
+        Conditional(Number(0), [Number(1)], None).accept(constant_folder)\
+            .accept(pretty_printer)
         print('======================\n')
 
     test_printer()

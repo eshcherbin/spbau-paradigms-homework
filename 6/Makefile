@@ -1,5 +1,5 @@
 CC ?= clang
-CFLAGS ?= -g -Wall -Wextra -Wshadow -Werror -ansi -pedantic
+CFLAGS ?= -O2 -Wall -Wextra -Wshadow -Werror -ansi -pedantic
 LDFLAGS ?= -lpthread
 
 all: pqsort.c thread_pool.c thread_pool.h
@@ -8,4 +8,4 @@ all: pqsort.c thread_pool.c thread_pool.h
 clean:
 	rm pqsort -f
 
-.PHONY: clean
+.PHONY: clean all

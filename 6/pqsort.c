@@ -4,6 +4,9 @@
 
 void pqsort(void*);
 
+struct TaskQueue queue;
+pthread_mutex_t qmutex;
+
 int *a, rec_limit;
 
 struct TaskArgs
@@ -36,6 +39,11 @@ void add_qsort_task(int l, int r, int depth, struct ThreadPool *pool)
     targs_set(new_targs, l, r, depth, pool);
     new_task = (struct Task*) malloc(sizeof(struct Task));
     task_init(new_task, pqsort, (void*) new_targs);
+
+    pthread_mutex_lock(&qmutex);
+    qpush(&queue, new_task);
+    pthread_mutex_unlock(&qmutex);
+
     thpool_submit(pool, new_task);
 }
 
@@ -81,6 +89,7 @@ int main(int argc, char **argv)
     int i, n, sorted;
     unsigned threads_nm;
     struct ThreadPool pool;
+    struct Task *task;
 
     srand(42);
 
@@ -97,15 +106,26 @@ int main(int argc, char **argv)
     for (i = 0; i < n; i++)
         a[i] = rand();
 
+    pthread_mutex_init(&qmutex, NULL);
     thpool_init(&pool, threads_nm);
     add_qsort_task(0, n, 0, &pool);
 
-    pthread_mutex_lock(&pool.mutex);
-    while (pool.total_tasks > pool.completed_tasks)
-        pthread_cond_wait(&pool.cond_completed, &pool.mutex);
-    pthread_mutex_unlock(&pool.mutex);
+    pthread_mutex_lock(&qmutex);
+    task = qpop(&queue);
+    pthread_mutex_unlock(&qmutex);
+    while (task)
+    {
+        thpool_wait(task);
+        task_finit(task);
+        free(task);
+
+        pthread_mutex_lock(&qmutex);
+        task = qpop(&queue);
+        pthread_mutex_unlock(&qmutex);
+    }
     
     thpool_finit(&pool);
+    pthread_mutex_destroy(&qmutex);
 
     sorted = 1;
     for (i = 1; i < n; i++)

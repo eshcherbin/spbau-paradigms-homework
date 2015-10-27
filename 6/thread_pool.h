@@ -21,8 +21,18 @@ struct TaskList
     struct TaskList *next;
 };
 
-void push(struct TaskList**, struct Task*);
-struct Task* pop(struct TaskList**);
+void lpush(struct TaskList**, struct Task*);
+struct Task* lpop(struct TaskList**);
+
+struct TaskQueue
+{
+    struct TaskList *front, *back;
+};
+
+void qinit(struct TaskQueue*);
+void qpush(struct TaskQueue*, struct Task*);
+struct Task* qpop(struct TaskQueue*);
+int qempty(struct TaskQueue*);
 
 void task_init(struct Task*, void (*f)(void*), void*);
 void task_finit(struct Task*);
@@ -33,10 +43,10 @@ struct ThreadPool
 {
     unsigned threads_nm;
     pthread_mutex_t mutex;
-    pthread_cond_t cond, cond_completed;
+    pthread_cond_t cond;
     pthread_t *ths;
-    struct TaskList *lst, *completed_lst;
-    int end, total_tasks, completed_tasks;
+    struct TaskQueue queue;
+    int end;
 };
 
 void thpool_init(struct ThreadPool*, unsigned);

@@ -1,6 +1,6 @@
 import Prelude hiding (lookup)
 
-data BST k v = Empty | Tree k v (BST k v) (BST k v)
+data BST k v = Empty | Tree k v (BST k v) (BST k v) deriving (Show)
 
 lookup :: Ord k => k -> BST k v -> Maybe v
 lookup _ Empty = Nothing
@@ -34,8 +34,9 @@ delete :: Ord k => k -> BST k v -> BST k v
 delete _ Empty = Empty
 delete k (Tree tk tv left right) | k < tk    = Tree tk tv (delete k left) right
                                  | k > tk    = Tree tk tv left (delete k right)
-                                 | otherwise = case left of Empty -> let (Just mk, Just mv, rem_right) = extract_min right
-                                                                     in Tree mk mv left rem_right
-                                                            _     -> let (Just mk, Just mv, rem_left) = extract_max left
-                                                                     in Tree mk mv rem_left right
+                                 | otherwise = case (left, right) of (Empty, Empty) -> Empty
+                                                                     (Empty, _) -> let (Just mk, Just mv, rem_right) = extract_min right
+                                                                                   in Tree mk mv left rem_right
+                                                                     (_, Empty) -> let (Just mk, Just mv, rem_left) = extract_max left
+                                                                                   in Tree mk mv rem_left right
 
